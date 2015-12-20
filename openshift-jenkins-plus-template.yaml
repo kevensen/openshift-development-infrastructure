@@ -8,7 +8,7 @@ metadata:
     iconClass: icon-jenkins
     tags: instant-app,jenkins
   creationTimestamp: null
-  name: jenkins-persistent
+  name: jenkins-persistent-plus
 objects:
 - apiVersion: v1
   kind: Service
@@ -130,7 +130,6 @@ objects:
     source:
       contextDir: ${SERVER_CONTEXT_DIR}
       git:
-        ref: ${SOURCE_REPOSITORY_REF}
         uri: ${SOURCE_REPOSITORY_URL}
       type: Git
     strategy:
@@ -140,13 +139,13 @@ objects:
     - github:
         secret: ${GITHUB_WEBHOOK_SECRET}
       type: GitHub
-    - imageChange:
+    - ImageChange:
         from:
           kind: ImageStreamTag
           name: jenkins:latest
           namespace: openshift
-      type: imagechange 
-
+      type: ImageChange 
+    - type: ConfigChange
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
@@ -170,6 +169,8 @@ objects:
           env:
           - name: JENKINS_PASSWORD
             value: ${JENKINS_PASSWORD}
+          - name: ANT_HOME
+            value: /usr/share/ant/
           image: ${JENKINS_IMAGE}
           imagePullPolicy: IfNotPresent
           name: jenkins
@@ -217,6 +218,7 @@ parameters:
     are not using the default branch
   value: master
   name: SOURCE_REPOSITORY_REF
-- description: Set this to the relative path to your project if it is not in the root
-    of your repository
-  name: CONTEXT_DIR
+- description: A secret string used to configure the GitHub webhook
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+  name: GITHUB_WEBHOOK_SECRET
