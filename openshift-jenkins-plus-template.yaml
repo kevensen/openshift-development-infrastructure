@@ -171,6 +171,10 @@ objects:
             value: ${JENKINS_PASSWORD}
           - name: ANT_HOME
             value: /usr/share/ant/
+          - name: M2_HOME
+            value: /usr/share/maven
+          - name: M2
+            value: $M2/bin
           image: ${JENKINS_IMAGE}
           imagePullPolicy: IfNotPresent
           name: jenkins
