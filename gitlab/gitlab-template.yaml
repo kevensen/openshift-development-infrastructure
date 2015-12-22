@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: gitlab-template
+metadata:
+  annotations:
+    description: GitLab, with persistent storage.
+    tags: instant-app,gitlab
+  creationTimestamp: null
+  name: gitlab
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-https
+  spec:
+    portalIP: ""
+    ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: 443
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-http
+  spec:
+    portalIP: ""
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 80
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-ssh
+  spec:
+    portalIP: ""
+    ports:
+    - name: https
+      port: 22
+      protocol: TCP
+      targetPort: 22
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      name: ${GITLAB_SERVICE_NAME}-https
+    name: ${GITLAB_SERVICE_NAME}-https
+  spec:
+    port:
+      targetPort: "443"
+    tls:
+      termination: passthrough
+    to:
+      kind: Service
+      name: ${GITLAB_SERVICE_NAME}-https
+  status: {}
+
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${GITLAB_SERVICE_NAME}-config
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${CONFIG_VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${GITLAB_SERVICE_NAME}-logs
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${LOGS_VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${GITLAB_SERVICE_NAME}-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${DATA_VOLUME_CAPACITY}
+
+
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    strategy:
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          name: ${GITLAB_SERVICE_NAME}
+      spec:
+        containers:
+        - capabilities: {}
+          image: ${GITLAB_IMAGE}
+          imagePullPolicy: IfNotPresent
+          name: jenkins
+          resources: {}
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /etc/gitlab
+            name: ${GITLAB_SERVICE_NAME}-config
+          - mountPath: /var/log/gitlab
+            name: ${GITLAB_SERVICE_NAME}-logs
+          - mountPath: /var/opt/gitlab
+            name: ${GITLAB_SERVICE_NAME}-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        volumes:
+        - name: ${GITLAB_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${GITLAB_SERVICE_NAME}-data
+        - name: ${GITLAB_SERVICE_NAME}-logs
+          persistentVolumeClaim:
+            claimName: ${GITLAB_SERVICE_NAME}-logs
+        - name: ${GITLAB_SERVICE_NAME}-config
+          persistentVolumeClaim:
+            claimName: ${GITLAB_SERVICE_NAME}-config
+    triggers:
+    - type: ConfigChange
+
+parameters:
+- description: GitLab service name
+  name: GITLAB_SERVICE_NAME
+  value: gitlab
+- description: GitLab Image
+  name: GITLAB_IMAGE
+  value: gitlab/gitlab-ce:latest
+
+- description: Volume space available for configuration, e.g. 512Mi, 2Gi
+  name: CONFIG_VOLUME_CAPACITY
+  required: true
+  value: 512Mi
+- description: Volume space available for logs, e.g. 512Mi, 2Gi
+  name: LOGS_VOLUME_CAPACITY
+  required: true
+  value: 2Gi
+- description: Volume space available for data, e.g. 512Mi, 2Gi
+  name: DATA_VOLUME_CAPACITY
+  required: true
+  value: 15Gi
+
+
+
+
