@@ -8,5 +8,5 @@ RUN scl enable nodejs010 'npm install -g bower' \
     && scl enable nodejs010 'npm install -g grunt-cli' \
     && scl enable nodejs010 'npm install -g gulp' \
     && scl enable nodejs010 'npm install -g ogr2ogr'
-
+RUN ln -s /usr/share/java/ivy.jar /usr/share/ant/lib/ivy.jar
 USER 1001
