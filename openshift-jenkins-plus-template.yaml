@@ -174,7 +174,7 @@ objects:
           - name: M2_HOME
             value: /usr/share/maven
           - name: M2
-            value: $M2/bin
+            value: $M2_HOME/bin
           image: ${JENKINS_IMAGE}
           imagePullPolicy: IfNotPresent
           name: jenkins
