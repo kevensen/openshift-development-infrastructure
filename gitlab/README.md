@@ -1,4 +1,4 @@
-# openshift-development-infrastructure/README.md
+# openshift-development-infrastructure/gitlab
 
 The <a href="https://hub.docker.com/r/gitlab/gitlab-ce/">GitLab Community Edition</a> is provided.  We don't have to make any modifications to it as it works pretty much out of the box.  If you want to configure SSL, you can do that after deployment.  The configuration persists via one of the persistent volume claims.
 
