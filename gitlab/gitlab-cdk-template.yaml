@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: gitlab-template
+metadata:
+  annotations:
+    description: GitLab, with persistent storage.
+    iconClass: icon-git
+    tags: instant-app,gitlab
+  creationTimestamp: null
+  name: gitlab
+objects:
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: "gitlab-ce"
+  spec:
+    tags:
+    - name: "latest"
+      from:
+        Kind: "DockerImage"
+        Name: ${GITLAB_IMAGE_NAME}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-https
+  spec:
+    portalIP: ""
+    ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: 443
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-http
+  spec:
+    portalIP: ""
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 80
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}-ssh
+  spec:
+    portalIP: ""
+    ports:
+    - name: https
+      port: 22
+      protocol: TCP
+      targetPort: 22
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      name: ${GITLAB_SERVICE_NAME}-https
+    name: ${GITLAB_SERVICE_NAME}-https
+  spec:
+    port:
+      targetPort: "443"
+    tls:
+      termination: passthrough
+    to:
+      kind: Service
+      name: ${GITLAB_SERVICE_NAME}-https
+  status: {}
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: ${GITLAB_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${GITLAB_SERVICE_NAME}
+    strategy:
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          name: ${GITLAB_SERVICE_NAME}
+        name: ${GITLAB_SERVICE_NAME}
+      spec:
+        containers:
+        - image: ${GITLAB_SERVICE_NAME}
+          name: ${GITLAB_SERVICE_NAME}
+          volumeMounts:
+          - mountPath: /etc/gitlab
+            name: ${GITLAB_SERVICE_NAME}-config
+          - mountPath: /var/log/gitlab
+            name: ${GITLAB_SERVICE_NAME}-logs
+          - mountPath: /var/opt/gitlab
+            name: ${GITLAB_SERVICE_NAME}-data
+        restartPolicy: Always
+        volumes:
+        - name: ${GITLAB_SERVICE_NAME}-data
+          hostPath:
+            path: /home/vagrant/gitlabce/data
+        - name: ${GITLAB_SERVICE_NAME}-logs
+          hostPath:
+            path: /home/vagrant/gitlabce/logs
+        - name: ${GITLAB_SERVICE_NAME}-config
+          hostPath:
+            path: /home/vagrant/gitlabce/config
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${GITLAB_SERVICE_NAME}
+        from:
+          kind: ImageStreamTag
+          name: gitlab-ce:latest
+      type: ImageChange
+
+parameters:
+- description: GitLab service name
+  name: GITLAB_SERVICE_NAME
+  value: gitlab
+  required: true
+- description: GitLab Image
+  name: GITLAB_IMAGE_NAME
+  value: docker.io/gitlab/gitlab-ce
+  required: true
