@@ -87,6 +87,20 @@ objects:
   status: {}
 
 - apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      name: ${GITLAB_SERVICE_NAME}-http
+    name: ${GITLAB_SERVICE_NAME}-http
+  spec:
+    port:
+      targetPort: "80"
+    to:
+      kind: Service
+      name: ${GITLAB_SERVICE_NAME}-http
+  status: {}
+
+- apiVersion: v1
   kind: DeploymentConfig
   metadata:
     creationTimestamp: null
