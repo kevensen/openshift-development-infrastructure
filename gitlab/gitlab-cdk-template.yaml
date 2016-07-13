@@ -18,8 +18,8 @@ objects:
     tags:
     - name: "latest"
       from:
-        Kind: "DockerImage"
-        Name: ${GITLAB_IMAGE_NAME}
+        kind: "DockerImage"
+        name: ${GITLAB_IMAGE_NAME}
 
 - apiVersion: v1
   kind: Service
